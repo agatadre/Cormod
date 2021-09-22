@@ -1,1 +1,10 @@
-src/
+src_images/
+
+# User-specific stuff:
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+
+.idea/
+
+__pycache__/

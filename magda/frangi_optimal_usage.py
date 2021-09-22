@@ -23,10 +23,6 @@ if __name__ == '__main__':
     img_test1 = images[0]
     img_test2 = images[15]
 
-    # images_frangi = np.array([img_test1], dtype=img_test1.dtype)
-    # images_frangi = np.append( images_frangi, np.reshape(img_test2, (1, 512, 512)), axis=0 )
-    # frangi_img = frangi(img_test1, sigmas=(1,2,2), alpha=1.5, beta=5, black_ridges=True)
-
     """
     =============
     Frangi filter
