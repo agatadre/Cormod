@@ -1,3 +1,3 @@
 # Cormod
 
-zmiana w pliku md
+1. Opis projektu:
