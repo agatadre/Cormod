@@ -121,3 +121,47 @@ if __name__ == '__main__':
 
     plt.show()
 
+   # Frame 'Relative Time' (n) = Frame Delay + Frame Time * (n-1)
+
+
+
+#
+# # =========================================================================
+# # ======= preprocessing === TOP-HAT OPERATOR (MORPHOLOGICAL) ==============
+#
+# # Defining the kernel to be used in Top-Hat TODO - jaki filtr jest najlepszy??
+# filterSize = (200, 200)
+# kernel = cv2.getStructuringElement(cv2.MORPH_RECT, filterSize)
+#
+# # Applying the Top-Hat operation
+# images_tophat = np.empty((0, images.shape[1], images.shape[2]), dtype=images.dtype)
+# for ind in range(images.shape[0]):
+#     img = images[ind]
+#     tophat_img = cv2.morphologyEx(img, cv2.MORPH_BLACKHAT, kernel)
+#     tophat_img = np.reshape(tophat_img, (1, 512, 512))
+#     images_tophat = np.append(images_tophat, tophat_img, axis=0)
+#
+# display_multiple_img(images_tophat, 5, math.ceil(images_tophat.shape[0]/5))
+#
+# # Computing horizontal line integrals (sum over x)
+# hl_integrals = np.sum(images_tophat, axis=1)
+#
+# """ The vertical motion between two successive frames is estimated by identifying the shift along the
+# vertical axis that minimizes the sum of squared differences between the corresponding @Hn vectors (@horizontal line integrals).
+# """
+#
+# h1 = 0
+# h2 = 0
+#
+# sq_diff = []
+#
+# for ind in range(hl_integrals.shape[0]):
+#     h2 = ind
+#     sum = np.sum((hl_integrals[h1] - hl_integrals[h2]) ** 2)
+#     sq_diff = np.append(sq_diff, sum)
+#
+# print(sq_diff)
+#
+# plt.plot(range(hl_integrals.shape[0] - 1), sq_diff[1:])
+# plt.title("Surrogate ECG signal")
+# plt.show()
