@@ -1,52 +1,18 @@
-from scipy.spatial import distance as dist
 import matplotlib.pyplot as plt
-import numpy as np
-import math
-import argparse
-import glob
 from pydicom import dcmread
 import cv2
+from functions import print_dicom_info
 
+"""
+Nieefektywny - wyłączony z użycia.
+Moje podejście do filtrowania obrazów o porównywania otrzymanych wyników.
+Używane operatory: 
+- [] tophat (wydobycie najbardziej białych elementów)
+- [] blackhat (-||- ciemnych elementów)
+- [] odejmowanie i/lub dodawanie top/blackhat
+- [] thresholding (globalny i lokalny-Gauss i mean) - globalny o dziwo działał lepiej
 
-def print_dicom_info(dic_file):
-    print(dic_file['Modality'])
-    print(dic_file['StudyDate'])
-    print(dic_file['SOPClassUID'])
-    print(dic_file['Manufacturer'])
-    print(dic_file['ManufacturerModelName'])
-    print(dic_file['DeviceSerialNumber'])
-    print(dic_file['SoftwareVersions'])
-    print(f"Transfer Syntax..........: {dic_file.file_meta.TransferSyntaxUID}")
-    print(dic_file['SamplesPerPixel'])  # 1 -> grayscale
-    print(dic_file['PhotometricInterpretation'])
-    print(dic_file['Rows'])
-    print(dic_file['Columns'])
-    if dic_file[0x0028, 0x0002].value != 1:
-        print(f"Planar Configuration (order of pix val e.g. rgb)...............: {dic_file[0x0028, 0x0006].value}")
-    print(dic_file['FrameTime'].__str__() + " ms")  # Nominal time (in msec) per individual frame.
-    print(dic_file['NumberOfFrames'])  # Number of frames in a Multi-frame Image. See C.7.6.6.1.1 for further explanation.
-    print(dic_file['RecommendedDisplayFrameRate'])  # Recommended rate at which the frames of a Multi-frame image should be displayed in frames/second.
-    print(dic_file['CineRate'])
-    # print(ds['ActualFrameDuration'])
-    # print(ds['ContentTime']) #The time the image pixel data creation started. Required if image is part of a series in which the images are temporally related.
-
-
-def display_multiple_img(images, rows=1, type='gray', title='', addColorbar=False):
-    cols = math.ceil(images.shape[0]/rows)
-    fig, axs = plt.subplots( nrows=rows, ncols=cols )
-    num_of_img = images.shape[0]
-    axs = axs.ravel()
-    for ind in range(num_of_img):
-        img_ret = axs[ind].imshow( images[ind], type, aspect='equal' )
-        axs[ind].set_title( ind, fontsize=8, pad=0.1 )
-        axs[ind].set_axis_off()
-    for ind in range(num_of_img, rows*cols):
-        axs[ind].set_axis_off()
-    fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.2)
-    if title != '':
-        fig.canvas.set_window_title(title)
-    if addColorbar:
-        fig.colorbar(img_ret)
+"""
 
 
 def display_top_blackhat_res(img, filterSize=(10,10), title=''):
@@ -75,7 +41,6 @@ def display_top_blackhat_res(img, filterSize=(10,10), title=''):
     res_img = cv2.add( img, tophat_img)
     im = ax[1, 2].imshow(res_img, 'gray')
     ax[1, 2].set_title('res = img + top')
-
 
     fig.canvas.set_window_title(f'{filterSize[0]} {title}')
     fig.tight_layout()
@@ -211,48 +176,3 @@ if __name__ == '__main__':
 
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-    # Frame 'Relative Time' (n) = Frame Delay + Frame Time * (n-1)
-
-
-
-#
-# # =========================================================================
-# # ======= preprocessing === TOP-HAT OPERATOR (MORPHOLOGICAL) ==============
-#
-# # Defining the kernel to be used in Top-Hat TODO - jaki filtr jest najlepszy??
-# filterSize = (200, 200)
-# kernel = cv2.getStructuringElement(cv2.MORPH_RECT, filterSize)
-#
-# # Applying the Top-Hat operation
-# images_tophat = np.empty((0, images.shape[1], images.shape[2]), dtype=images.dtype)
-# for ind in range(images.shape[0]):
-#     img = images[ind]
-#     tophat_img = cv2.morphologyEx(img, cv2.MORPH_BLACKHAT, kernel)
-#     tophat_img = np.reshape(tophat_img, (1, 512, 512))
-#     images_tophat = np.append(images_tophat, tophat_img, axis=0)
-#
-# display_multiple_img(images_tophat, 5, math.ceil(images_tophat.shape[0]/5))
-#
-# # Computing horizontal line integrals (sum over x)
-# hl_integrals = np.sum(images_tophat, axis=1)
-#
-# """ The vertical motion between two successive frames is estimated by identifying the shift along the
-# vertical axis that minimizes the sum of squared differences between the corresponding @Hn vectors (@horizontal line integrals).
-# """
-#
-# h1 = 0
-# h2 = 0
-#
-# sq_diff = []
-#
-# for ind in range(hl_integrals.shape[0]):
-#     h2 = ind
-#     sum = np.sum((hl_integrals[h1] - hl_integrals[h2]) ** 2)
-#     sq_diff = np.append(sq_diff, sum)
-#
-# print(sq_diff)
-#
-# plt.plot(range(hl_integrals.shape[0] - 1), sq_diff[1:])
-# plt.title("Surrogate ECG signal")
-# plt.show()

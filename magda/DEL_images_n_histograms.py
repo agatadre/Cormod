@@ -3,6 +3,11 @@ import math
 from pydicom import dcmread
 
 
+"""
+Poboczne.
+Wyświetlanie histogramów serii obrazów - dla Agaty.
+"""
+
 def display_multiple_img_hist(images, rows=1, type='gray'):
     cols = 2 * math.ceil(images.shape[0]/rows)
     fig, axs = plt.subplots( nrows=rows, ncols=cols )

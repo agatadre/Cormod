@@ -1,76 +1,67 @@
-from scipy.spatial import distance as dist
 import matplotlib.pyplot as plt
-import numpy as np
-import math
-import argparse
-import glob
 from pydicom import dcmread
-import cv2
-from FRANGI.frangiFilrer2D import FrangiFilter2D
 from skimage.filters import frangi, hessian
+
+"""
+=============
+Frangi filter
+=============
+
+The Frangi and hybrid Hessian filters can be used to detect continuous
+edges, such as vessels, wrinkles, and rivers.
+"""
+
+
+def display_4_img_hist(images, titles, plotHistograms=False):
+    ncols = 4 if plotHistograms else 2
+
+    fig, axs = plt.subplots(nrows=2, ncols=ncols)
+    num_of_img = images.__len__()
+    axs = axs.ravel()
+
+    for ind in range(num_of_img):
+        axs[2 * ind].imshow( images[ind], cmap=plt.cm.gray, aspect='equal' )
+        axs[2 * ind].set_title( titles[ind], fontsize=8, pad=0.1 )
+        axs[2 * ind].set_axis_off()
+
+    if plotHistograms:
+        axs[1].hist(images[0].ravel(), 256, [0, 256])
+        axs[1].set_title('hist')
+        axs[3].hist(images[1].ravel(), 256, [0, 256])
+        axs[3].set_xscale('log')
+        axs[3].set_title('hist log')
+        axs[5].hist(images[2].ravel(), 256, [0, 256])
+        axs[5].set_title('hist')
+        axs[7].hist(images[3].ravel(), 256, [0, 256])
+        axs[7].set_xscale('log')
+        axs[7].set_title('hist log')
+
+ #   fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.2)
 
 
 if __name__ == '__main__':
-    print("Type DICOM file path:\n")
     file_path = "numer2\\exam.dcm"
-    # if file_path[-4:-1] != ".dcm":
-    #    file_path = "exam.dcm"
-
     ds = dcmread(file_path)
-    images = ds.pixel_array
-    print(f"SHAPE of pixel_array.......:{images.shape}")
 
-    img_test1 = images[0]
-    img_test2 = images[15]
+    """ TYPE = float """
+    images = ds.pixel_array.astype(float)
+    TYPE = images.dtype
 
-    """
-    =============
-    Frangi filter
-    =============
-    
-    The Frangi and hybrid Hessian filters can be used to detect continuous
-    edges, such as vessels, wrinkles, and rivers.
-    """
+    image = images[15]
 
-    image = img_test1
-    image = image.astype(float)
+    image_frangi = (255 * frangi(image)).astype('uint8')    # po prostu ucina końcówki, bez zaokrąglania
 
-    fig, ax = plt.subplots(nrows=2, ncols=4, subplot_kw={'adjustable': 'box'})
+    image_inv = (image.max() - image)  # cv2.sub(image.max() - image)
 
-    ax[0, 0].imshow(image, cmap=plt.cm.gray)
-    ax[0, 0].set_title('Original image - 1')
-    ax[0, 0].axis('off')
+    images_res = [image,
+                  image_frangi,
+                  image_inv,  # check minus operation
+                  (255 * frangi(image_inv, black_ridges=False)).astype('uint8') ]
+    titles = ['1. Original Image',
+              '1. Frangi filter result',
+              '2. Inverted Image',
+              '2. Frangi filter result (black_ridges=False)']
 
-    ax[0, 1].hist(image.ravel(), 256, [0, 256])
-    ax[0, 1].set_title('1 - hist')
-
-    ax[0, 2].imshow(frangi(image), cmap=plt.cm.gray)
-    ax[0, 2].set_title('Frangi filter result - 1')
-    ax[0, 2].axis('off')
-
-    ax[0, 3].hist(frangi(image).ravel(), 256, [0, 256])
-    ax[0, 3].set_title('1 frangi - hist')
-
-    image = image.max()-image
-    image = image.astype(float)
-
-    ax[1, 0].imshow(image, cmap=plt.cm.gray)
-    ax[1, 0].set_title('Original image - 2')
-    ax[1, 0].axis('off')
-
-    ax[1, 1].hist(image.ravel(), 256, [0, 256])
-    ax[1, 1].set_title('2 - hist')
-
-    ax[1, 2].imshow(frangi(image, black_ridges=False), cmap=plt.cm.gray)
-    ax[1, 2].set_title('Frangi filter result - 2 (inverted, black_ridges=False)')
-    ax[1, 2].axis('off')
-
-    ax[1, 3].hist(frangi(image).ravel(), 256, [0, 256])
-    ax[1, 3].set_title('2 frangi - hist')
-
-    for a in ax:
-        for aa in a:
-            aa.axis('off')
+    display_4_img_hist(images=images_res, titles=titles, plotHistograms=True)
 
     plt.show()
-
