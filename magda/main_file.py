@@ -4,6 +4,8 @@ import numpy as np
 from pydicom import dcmread
 from skimage.filters import frangi, hessian
 from functions import display_multiple_img
+import cv2
+from skimage import img_as_ubyte
 
 
 """ 
@@ -172,17 +174,18 @@ def show_results_from_dicom():
     images_frangi = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
 
     for ind in range(images.shape[0]):
-        img = ( 255 * frangi(images_f[ind]) ).astype(TYPE)         # po prostu ucina końcówki, bez zaokrąglania
+        img = frangi_scaled(images_f[ind])
 #        img = frangi(images_f[ind])
         img = np.reshape(img, (1, 512, 512))
         images_frangi = np.append(images_frangi, img, axis=0)
 
     maximal = np.max(images_frangi)
     print(f'=============== MAX = {maximal}')
-    display_multiple_img(images_frangi, 4, 'gray', addColorbar=True)
+    # display_multiple_img(images_frangi, 4, 'gray', addColorbar=True)
 
-    # bin_imgs = cv2.threshold(images_frangi, 10.0, 255.0, cv2.THRESH_BINARY)[1]
-    # display_multiple_img(bin_imgs, 4, 'gray', title='binary 10')
+    thresh = 20
+    bin_imgs = cv2.threshold(images_frangi, thresh, 255, cv2.THRESH_BINARY)[1]
+    display_multiple_img(bin_imgs, 4, 'gray', title=f'binary{thresh}')
     #
     # bin_imgs = cv2.threshold(images_frangi, 10.0, 255.0, cv2.THRESH_BINARY_INV)[1]
     # display_multiple_img(bin_imgs, 4, 'gray', title='binary inv 10')
@@ -191,23 +194,127 @@ def show_results_from_dicom():
 
     print("============== algorithm ==================")
 
-    m_sh = 512
-    best_shifts_1 = surrogate_ECG_horline_integrals(images_frangi, max_shift=m_sh)
-    best_shifts_2 = surrogate_ECG_horline_integrals(images, max_shift=m_sh)
+    m_sh = 200
+    # best_shifts_1 = surrogate_ECG_horline_integrals(images_frangi, max_shift=m_sh)
+    # best_shifts_2 = surrogate_ECG_horline_integrals(images, max_shift=m_sh)
+    best_shifts_3 = surrogate_ECG_horline_integrals(bin_imgs, max_shift=m_sh)
 
     """ 
         Plotting best shifts between each two adjacent images (0:1, 1:2 ... N-1:N)
     """
     print("============== Surrogate ECG ==================")
 
-    plot_ECG_signal(best_shifts_1, f"Surrogate ECG signal - frangi, max_sh = {m_sh}")
-    plot_ECG_signal(best_shifts_2, f"Surrogate ECG signal - original images, max_sh = {m_sh}")
+    # plot_ECG_signal(best_shifts_1, f"Surrogate ECG signal - frangi, max_sh = {m_sh}")
+    # plot_ECG_signal(best_shifts_2, f"Surrogate ECG signal - original images, max_sh = {m_sh}")
+    plot_ECG_signal(best_shifts_3, f"Surrogate ECG signal - thresh frangi, max_sh = {m_sh}")
 
     plt.show()
 
 
-if __name__ == '__main__':
-     # show_results_from_dicom()
-     test_algorithm()
+def clearImageEdges(img):
+     imgM = np.copy(img)
+     imgM[0:512, 0:30] = 0
+     imgM[0:43, 0:512] = 0
+     imgM[0:512, 475:512] = 0
+     imgM[470:512, 0:512] = 0
+     return imgM
 
-   # Frame 'Relative Time' (n) = Frame Delay + Frame Time * (n-1)
+
+''' Maska: thresholding, rozmycie + wykresy '''
+def my_mask(img, th_val=127):
+    ret, th_img = cv2.threshold(img, th_val, 255, cv2.THRESH_BINARY)
+
+    kernel = np.ones((5, 5), np.uint8)
+    dil_img = cv2.dilate(th_img, kernel, iterations=3)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(131)
+    ax.imshow(img, 'gray')
+    ax = fig.add_subplot(132)
+    ax.imshow(th_img, 'gray')
+    ax = fig.add_subplot(133)
+    ax.imshow(dil_img, 'gray')
+
+    return dil_img
+
+
+def maskImage(img, threshold=100):
+     imgM = np.copy(img)
+     kernel = np.ones((5, 5), np.uint8)
+     imgM = cv2.dilate(img, kernel, iterations=3)
+     # imgM = cv2.bilateralFilter(imgM, 100, 20, 600, borderType=cv2.BORDER_CONSTANT)
+     for i in range(imgM.shape[0]):
+         for j in range(imgM.shape[1]):
+             if imgM[i][j] < threshold:
+                 imgM[i][j] = 0
+             else:
+                 imgM[i][j] = 1
+
+     return imgM
+
+
+def frangi_scaled(img):
+    return (255 * frangi(img)).astype('uint8')
+
+
+def disp_top_blackhat_frangi_and_thresh_resuts(img, thresh=15):
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (37, 37))
+    tophat_img = cv2.morphologyEx(img_2d, cv2.MORPH_TOPHAT, kernel)
+    blackhat_img = cv2.morphologyEx(img_2d, cv2.MORPH_BLACKHAT, kernel)
+
+    i_add = cv2.add(img_2d, tophat_img)
+    i_sub = cv2.subtract(img_2d, blackhat_img)
+    i_add_sub = cv2.subtract(cv2.add(img_2d, tophat_img), blackhat_img)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(251)
+    ax.imshow(img_2d, 'gray')
+
+    res_img = frangi_scaled(img_2d)
+    ret, th_img = cv2.threshold(res_img, thresh, 255, cv2.THRESH_BINARY)
+    ax = fig.add_subplot(252)
+    ax.imshow(res_img, 'gray')
+    ax.set_title('classic frangi')
+    ax = fig.add_subplot(257)
+    ax.imshow(th_img, 'gray')
+
+    res_img = frangi_scaled(i_sub)
+    ret, th_img = cv2.threshold(res_img, thresh, 255, cv2.THRESH_BINARY)
+    ax = fig.add_subplot(253)
+    ax.imshow(res_img, 'gray')
+    ax.set_title('sub blackhat - frangi')
+    ax = fig.add_subplot(258)
+    ax.imshow(th_img, 'gray')
+
+    res_img = frangi_scaled(i_add)
+    ret, th_img = cv2.threshold(res_img, thresh, 255, cv2.THRESH_BINARY)
+    ax = fig.add_subplot(254)
+    ax.imshow(res_img, 'gray')
+    ax.set_title('add tophat - frangi')
+    ax = fig.add_subplot(259)
+    ax.imshow(th_img, 'gray')
+
+    res_img = frangi_scaled(i_add_sub)
+    ret, th_img = cv2.threshold(res_img, thresh, 255, cv2.THRESH_BINARY)
+    ax = fig.add_subplot(255)
+    ax.imshow(res_img, 'gray')
+    ax.set_title('add top-, sub blackhat - frangi')
+    ax = fig.add_subplot(2, 5, 10)
+    ax.imshow(th_img, 'gray')
+
+
+if __name__ == '__main__':
+    show_results_from_dicom()
+    # test_algorithm()
+
+    ds = dcmread("numer2\\exam.dcm")
+    ind = 18
+    img_2d = ds.pixel_array[ind].astype('float')
+    img_2d_scaled = (np.maximum(img_2d, 0) / img_2d.max()) * 255.0
+
+    # ======================== TOP-, BLACKHAT =========================
+    # disp_top_blackhat_frangi_and_thresh_resuts(img_2d, 10)
+    # plt.show()
+    # =====================================================================
+
+    # Frame 'Relative Time' (n) = Frame Delay + Frame Time * (n-1)
