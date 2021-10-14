@@ -5,6 +5,7 @@ from pydicom import dcmread
 from skimage.filters import frangi, hessian
 from functions import display_multiple_img
 import cv2
+import math
 from skimage import img_as_ubyte
 
 
@@ -161,6 +162,8 @@ def test_algorithm():
     print("============= end test =============")
 
 
+"""Wyświetlenie przefiltrowanych i ztreshowanych obrazów z numer2/exam.dcm
+Wyliczenie sygnału ECG dla wyników po frangi i po thresholdingu"""
 def show_results_from_dicom():
     print("Type DICOM file path:\n")
     file_path = "numer2\\exam.dcm"
@@ -194,8 +197,8 @@ def show_results_from_dicom():
 
     print("============== algorithm ==================")
 
-    m_sh = 200
-    # best_shifts_1 = surrogate_ECG_horline_integrals(images_frangi, max_shift=m_sh)
+    m_sh = math.ceil(images.shape[1]*0.1)
+    best_shifts_1 = surrogate_ECG_horline_integrals(images_frangi, max_shift=m_sh)
     # best_shifts_2 = surrogate_ECG_horline_integrals(images, max_shift=m_sh)
     best_shifts_3 = surrogate_ECG_horline_integrals(bin_imgs, max_shift=m_sh)
 
@@ -204,11 +207,71 @@ def show_results_from_dicom():
     """
     print("============== Surrogate ECG ==================")
 
-    # plot_ECG_signal(best_shifts_1, f"Surrogate ECG signal - frangi, max_sh = {m_sh}")
+    plot_ECG_signal(best_shifts_1, f"Surrogate ECG signal - frangi, max_sh = {m_sh}")
     # plot_ECG_signal(best_shifts_2, f"Surrogate ECG signal - original images, max_sh = {m_sh}")
     plot_ECG_signal(best_shifts_3, f"Surrogate ECG signal - thresh frangi, max_sh = {m_sh}")
 
     plt.show()
+
+
+def quick_image_filtering():
+    print("Type DICOM file path:\n")
+    file_path = "numer2\\exam.dcm"
+    ds = dcmread(file_path)
+    images = ds.pixel_array
+    TYPE = images.dtype
+
+    print("============== filtering - frangi ==================")
+    images_frangi = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
+
+    for ind in range(images.shape[0]):
+        img = frangi_scaled(images[ind])
+        img = np.reshape(img, (1, 512, 512))
+        images_frangi = np.append(images_frangi, img, axis=0)
+
+    maximal = np.max(images_frangi)
+    print(f'=============== MAX = {maximal}')
+    # display_multiple_img(images_frangi, 4, 'gray', addColorbar=True)
+
+    test_img = images_frangi[18]
+    thresh = 10
+    thresh2 = 10.0
+
+    bin_img = cv2.threshold(test_img, thresh, 255, cv2.THRESH_BINARY)[1]
+    bin_img2 = cv2.threshold(images_frangi, thresh2, 255.0, cv2.THRESH_BINARY_INV)[1]
+
+    print("============== removing small objects ==================")
+    min_size = 150
+    reduced_img = remove_small_objects(bin_img, min_size)
+
+    images_res = np.array([ test_img, bin_img, bin_img2, reduced_img])
+    titles = ['Original image',
+              f'1. THRESH_BINARY {thresh} ',
+              f'2. THRESH_BINARY_INV {thresh2}',
+              f'Reduced 1., min_size {min_size}']
+    display_multiple_img(images_res, 4, 'gray', title=f'binary{thresh}', img_titles=titles)
+
+    plt.show()
+
+
+def remove_small_objects(binary_map, min_size=100):
+    connectivity = 4  # You need to choose 4 or 8 for connectivity type
+
+    # find all your connected components (white blobs in your image)
+    nlabels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_map, connectivity)
+
+    # taking out the background which is also considered a component
+    nlabels = nlabels - 1
+    areas = stats[1:, cv2.CC_STAT_AREA]  # get CC_STAT_AREA component as stats[label, COLUMN]
+
+    # your answer image
+    result = np.zeros(labels.shape, np.uint8)
+    # for every component in the image, you keep it only if it's above min_size
+    for i in range(0, nlabels):
+        if areas[i] >= min_size:
+            result[labels == i + 1] = 255
+
+    return result
 
 
 def clearImageEdges(img):
@@ -238,39 +301,29 @@ def my_mask(img, th_val=127):
     return dil_img
 
 
-def maskImage(img, threshold=100):
-     imgM = np.copy(img)
-     kernel = np.ones((5, 5), np.uint8)
-     imgM = cv2.dilate(img, kernel, iterations=3)
-     # imgM = cv2.bilateralFilter(imgM, 100, 20, 600, borderType=cv2.BORDER_CONSTANT)
-     for i in range(imgM.shape[0]):
-         for j in range(imgM.shape[1]):
-             if imgM[i][j] < threshold:
-                 imgM[i][j] = 0
-             else:
-                 imgM[i][j] = 1
-
-     return imgM
-
-
+""" Obraz najpierw zamieniony jest na float, żeby dostosować do go filtru frangi.
+Wynik jest z zakresu (0, 1), więc dokonwywane jest skalowanie do (0, 255)
+i zamiana na typ całkowity. 
+"""
 def frangi_scaled(img):
-    return (255 * frangi(img)).astype('uint8')
+    img_float = img.astype('float')
+    return np.around(255 * frangi(img_float)).astype('uint8')
 
 
 def disp_top_blackhat_frangi_and_thresh_resuts(img, thresh=15):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (37, 37))
-    tophat_img = cv2.morphologyEx(img_2d, cv2.MORPH_TOPHAT, kernel)
-    blackhat_img = cv2.morphologyEx(img_2d, cv2.MORPH_BLACKHAT, kernel)
+    tophat_img = cv2.morphologyEx(img, cv2.MORPH_TOPHAT, kernel)
+    blackhat_img = cv2.morphologyEx(img, cv2.MORPH_BLACKHAT, kernel)
 
-    i_add = cv2.add(img_2d, tophat_img)
-    i_sub = cv2.subtract(img_2d, blackhat_img)
-    i_add_sub = cv2.subtract(cv2.add(img_2d, tophat_img), blackhat_img)
+    i_add = cv2.add(img, tophat_img)
+    i_sub = cv2.subtract(img, blackhat_img)
+    i_add_sub = cv2.subtract(cv2.add(img, tophat_img), blackhat_img)
 
     fig = plt.figure()
     ax = fig.add_subplot(251)
-    ax.imshow(img_2d, 'gray')
+    ax.imshow(img, 'gray')
 
-    res_img = frangi_scaled(img_2d)
+    res_img = frangi_scaled(img)
     ret, th_img = cv2.threshold(res_img, thresh, 255, cv2.THRESH_BINARY)
     ax = fig.add_subplot(252)
     ax.imshow(res_img, 'gray')
@@ -304,15 +357,21 @@ def disp_top_blackhat_frangi_and_thresh_resuts(img, thresh=15):
 
 
 if __name__ == '__main__':
-    show_results_from_dicom()
+    # show_results_from_dicom()
+    # quick_image_filtering()
     # test_algorithm()
 
     ds = dcmread("numer2\\exam.dcm")
     ind = 18
     img_2d = ds.pixel_array[ind].astype('float')
-    img_2d_scaled = (np.maximum(img_2d, 0) / img_2d.max()) * 255.0
 
-    # ======================== TOP-, BLACKHAT =========================
+    plt.imshow(img_2d, 'gray')
+
+    plt.show()
+
+    # img_2d_scaled = (np.maximum(img_2d, 0) / img_2d.max()) * 255.0
+    #
+    # # ======================== TOP-, BLACKHAT =========================
     # disp_top_blackhat_frangi_and_thresh_resuts(img_2d, 10)
     # plt.show()
     # =====================================================================

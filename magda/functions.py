@@ -31,17 +31,23 @@ def print_dicom_info(dic_file):
     # print(ds['ContentTime']) #The time the image pixel data creation started. Required if image is part of a series in which the images are temporally related.
 
 
-def display_multiple_img(images, rows=1, type='gray', title='', addColorbar=False):
+def display_multiple_img(images, rows=1, type='gray', title='', addColorbar=False, img_titles=''):
     cols = math.ceil(images.shape[0]/rows)
     fig, axs = plt.subplots( nrows=rows, ncols=cols )
     num_of_img = images.shape[0]
     axs = axs.ravel()
+
     for ind in range(num_of_img):
         img_ret = axs[ind].imshow( images[ind], type, aspect='equal' )
-        axs[ind].set_title( ind, fontsize=8, pad=0.1 )
+        if img_titles != '':
+            axs[ind].set_title(ind, fontsize=8, pad=0.1)
+        else:
+            axs[ind].set_title(ind, fontsize=8, pad=0.1 )
         axs[ind].set_axis_off()
+
     for ind in range(num_of_img, rows*cols):
         axs[ind].set_axis_off()
+
     fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.2)
     if title != '':
         fig.canvas.set_window_title(title)
