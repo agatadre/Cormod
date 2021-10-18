@@ -3,7 +3,7 @@ import matplotlib.image as mpimg
 import numpy as np
 from pydicom import dcmread
 from skimage.filters import frangi, hessian
-from functions import display_multiple_img
+from functions import display_multiple_img, print_dicom_info
 import cv2
 import math
 from skimage import img_as_ubyte
@@ -49,9 +49,11 @@ def plot_ECG_signal(heights, title=''):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     # ax.scatter(range(len(images)), images)
-    ax.plot(range(len(heights)), heights, marker='o', label='normal vals')
-    ax.plot(range(len(heights)), abs(heights), marker='o', color='red', label='abs')
-    ax.plot(range(len(heights)), np.zeros([heights.shape[0]]))
+    ax.plot(range(1, len(heights)+1), heights, marker='o', label='normal vals')
+    ax.plot(range(1, len(heights)+1), abs(heights), marker='o', color='red', label='abs')
+    ax.plot(range(1, len(heights)+1), np.zeros([heights.shape[0]]))
+    ax.set_xticks(range(1, len(heights)+1))
+    ax.set_xticklabels(range(1, len(heights)+1))
     ax.set_title(title)
     ax.legend(frameon=False)
 
@@ -68,7 +70,7 @@ def test_algorithm():
          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
         [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-         [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+         [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
          [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -156,7 +158,9 @@ def test_algorithm():
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.plot(range(len(test_sh)), test_sh,  marker='o')
+    ax.plot(range(1, len(test_sh)+1), test_sh,  marker='o')
+    ax.set_xticks(range(1, len(test_sh)+1))
+    ax.set_xticklabels(range(1, len(test_sh)+1))
     plt.show()
 
     print("============= end test =============")
@@ -214,12 +218,26 @@ def show_results_from_dicom():
     plt.show()
 
 
-def quick_image_filtering():
-    print("Type DICOM file path:\n")
-    file_path = "numer2\\exam.dcm"
-    ds = dcmread(file_path)
-    images = ds.pixel_array
+def ED_finder_algorithm(images, max_shift=None, title=None):
+    print("============== algorithm ==================")
+    if max_shift is None:
+        max_shift = math.ceil(images.shape[1] * 0.1)
+    best_shifts = surrogate_ECG_horline_integrals(images, max_shift=max_shift)
+
+    """ 
+        Plotting best shifts between each two adjacent images (0:1, 1:2 ... N-1:N)
+    """
+    print("============== Surrogate ECG ==================")
+
+    if title is None:
+        title = f"Surrogate ECG signal, max_sh = {max_shift}"
+    plot_ECG_signal(best_shifts, title)
+    plt.show()
+
+
+def quick_image_filtering(images, thresh=10, min_size=700):
     TYPE = images.dtype
+    display_multiple_img(images, 4, 'gray', addColorbar=True, title=f'original projection')
 
     print("============== filtering - frangi ==================")
     images_frangi = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
@@ -231,27 +249,30 @@ def quick_image_filtering():
 
     maximal = np.max(images_frangi)
     print(f'=============== MAX = {maximal}')
-    # display_multiple_img(images_frangi, 4, 'gray', addColorbar=True)
 
-    test_img = images_frangi[18]
-    thresh = 10
-    thresh2 = 10.0
-
-    bin_img = cv2.threshold(test_img, thresh, 255, cv2.THRESH_BINARY)[1]
-    bin_img2 = cv2.threshold(images_frangi, thresh2, 255.0, cv2.THRESH_BINARY_INV)[1]
+    bin_imgs = cv2.threshold(images_frangi, thresh, 255, cv2.THRESH_BINARY)[1]
+    display_multiple_img(bin_imgs, 4, 'gray', title=f'thresholded projection, th={thresh}')
 
     print("============== removing small objects ==================")
-    min_size = 150
-    reduced_img = remove_small_objects(bin_img, min_size)
+    images_reduced = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
 
-    images_res = np.array([ test_img, bin_img, bin_img2, reduced_img])
-    titles = ['Original image',
-              f'1. THRESH_BINARY {thresh} ',
-              f'2. THRESH_BINARY_INV {thresh2}',
-              f'Reduced 1., min_size {min_size}']
-    display_multiple_img(images_res, 4, 'gray', title=f'binary{thresh}', img_titles=titles)
+    for img in bin_imgs:
+        red = np.reshape(remove_small_objects(img, min_size), (1, 512, 512))
+        images_reduced = np.append(images_reduced, red, axis=0)
 
+    display_multiple_img(images_reduced, 4, 'gray', title=f'reduced binary projection, th={thresh} min_s={min_size}')
+
+    # canny1 = cv2.Canny(images[18], 150, 190)
+    # canny2 = cv2.Canny(images_frangi[18], 50, 100)
+    # canny3 = cv2.Canny(reduced_img, 100, 200)
+    #
+    # images_res = np.stack((canny1, canny2, canny3))
+    # titles = ['canny - Original image',
+    #           'canny - Frangi',
+    #           'canny - reduced ']
+    # display_multiple_img(images_res, 2, 'gray', title=f'binary{thresh}', img_titles=titles)
     plt.show()
+    return images_reduced
 
 
 def remove_small_objects(binary_map, min_size=100):
@@ -357,17 +378,27 @@ def disp_top_blackhat_frangi_and_thresh_resuts(img, thresh=15):
 
 
 if __name__ == '__main__':
-    # show_results_from_dicom()
-    # quick_image_filtering()
     # test_algorithm()
 
-    ds = dcmread("numer2\\exam.dcm")
-    ind = 18
-    img_2d = ds.pixel_array[ind].astype('float')
+    print("Type DICOM file path:\n")
+    file_path = "numer2\\exam.dcm"
+    ds = dcmread(file_path)
+    images = ds.pixel_array
+    print_dicom_info(ds)
 
-    plt.imshow(img_2d, 'gray')
+    projection_reduced = quick_image_filtering(images, thresh=15)
+    ED_finder_algorithm(projection_reduced)
 
-    plt.show()
+    # show_results_from_dicom()
+
+
+    # ds = dcmread("numer2\\exam.dcm")
+    # ind = 18
+    # img_2d = ds.pixel_array[ind].astype('float')
+    #
+    # plt.imshow(img_2d, 'gray')
+    #
+    # plt.show()
 
     # img_2d_scaled = (np.maximum(img_2d, 0) / img_2d.max()) * 255.0
     #

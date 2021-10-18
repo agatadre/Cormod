@@ -1,4 +1,6 @@
 src_images/
+magda/assets
+magda/results - images
 
 # User-specific stuff:
 .idea/workspace.xml

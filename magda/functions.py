@@ -1,6 +1,6 @@
 import math
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 """
 Funkcje używane w wielu miejscach.
@@ -34,7 +34,11 @@ def print_dicom_info(dic_file):
 def display_multiple_img(images, rows=1, type='gray', title='', addColorbar=False, img_titles=''):
     cols = math.ceil(images.shape[0]/rows)
     fig, axs = plt.subplots( nrows=rows, ncols=cols )
-    num_of_img = images.shape[0]
+    num_of_img = images.shape[0] if isinstance(images, np.ndarray) else len(images)
+    if isinstance(images, np.ndarray):
+        num_of_img = images.shape[0]
+    else:
+        num_of_img = len(images)
     axs = axs.ravel()
 
     for ind in range(num_of_img):
