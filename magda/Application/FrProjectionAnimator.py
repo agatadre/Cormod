@@ -6,82 +6,6 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
 import matplotlib
-matplotlib.use("TkAgg")
-
-class Window(ttk.Frame):
-
-    def __init__(self, master = None):
-        ttk.Frame.__init__(self, master)
-        self.master = master
-        self.init_window()
-
-
-    def Clear(self):
-        print("clear")
-        self.textAmplitude.insert(0, "1.0")
-        self.textSpeed.insert(0, "1.0")
-
-
-    def Plot(self):
-        self.v = float(self.textSpeed.get())
-        self.A = float(self.textAmplitude.get())
-
-
-    def animate(self,i):
-        self.line.set_ydata(self.A*np.sin(self.x+self.v*i))  # update the data
-        return self.line,
-
-
-    def init_window(self):
-        self.master.title("Use Of FuncAnimation in tkinter based GUI")
-        self.pack(fill='both', expand=1)
-
-        #Create the controls, note use of grid
-        self.labelSpeed = ttk.Label(self,text="Speed (km/Hr)",width=12)
-        self.labelSpeed.grid(row=0,column=1)
-        self.labelAmplitude = ttk.Label(self,text="Amplitude",width=12)
-        self.labelAmplitude.grid(row=0,column=2)
-
-        self.textSpeed = ttk.Entry(self,width=12)
-        self.textSpeed.grid(row=1,column=1)
-        self.textAmplitude = ttk.Entry(self,width=12)
-        self.textAmplitude.grid(row=1,column=2)
-
-        self.textAmplitude.insert(0, "1.0")
-        self.textSpeed.insert(0, "1.0")
-        self.v = 1.0
-        self.A = 1.0
-
-
-        self.buttonPlot = ttk.Button(self,text="Plot",command=self.Plot,width=12)
-        self.buttonPlot.grid(row=2,column=1)
-
-        self.buttonClear = ttk.Button(self,text="Clear",command=self.Clear,width=12)
-        self.buttonClear.grid(row=2,column=2)
-
-
-        self.buttonClear.bind(lambda e:self.Clear)
-
-
-
-        tk.Label(self,text="SHM Simulation").grid(column=0, row=3)
-
-        self.fig = plt.Figure()
-
-        self.x = 20*np.arange(0, 2*np.pi, 0.01)        # x-array
-
-
-        self.ax = self.fig.add_subplot(111)
-        self.line, = self.ax.plot(self.x, np.sin(self.x))
-
-
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
-        self.canvas.get_tk_widget().grid(column=0,row=4)
-
-
-        self.ani = FuncAnimation(self.fig, self.animate, np.arange(1, 200), interval=25, blit=False)
-
-
 
 
 class FrProjectionAnimator(ttk.Frame):
@@ -92,6 +16,7 @@ class FrProjectionAnimator(ttk.Frame):
         self.frames = None
         self.animation = None
         self.frame_time = 0
+        self.playing = False
 
         ttk.Style().configure('PA.TFrame', background='#bdfdcb')
         self['style'] = 'PA.TFrame'
@@ -104,19 +29,9 @@ class FrProjectionAnimator(ttk.Frame):
 
         # ttk.Button(self, text='Start', command=self.start_animation).grid(column=0, row=0)
 
-        # create a figure
-        fig, ax = plt.subplots(figsize=(3,3), dpi=100)
-        self.figure = fig
-        self.axes = ax
-
-        self.v = 1.0
-        self.A = 1.0
-        self.x = 20 * np.arange(0, 2 * np.pi, 0.01)  # x-array
-        self.line, = self.axes.plot(self.x, np.sin(self.x))
-
-        self.canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
-        self.canvas.draw()
-        self.canvas.get_tk_widget().grid(column=0, row=1)
+        self.baseFrame = ttk.Frame(self, width=400, height=400, bg="gray")
+        self.baseFrame.place(x=150, y=40)
+        self.baseLabel = ttk.Label(self.baseFrame, bg="gray")
 
         # canvas = tk.Canvas(self, width=800, height=800)
         # canvas.pack()  # this makes it visible
@@ -147,8 +62,20 @@ class FrProjectionAnimator(ttk.Frame):
         #                                func=self.__update_animation,
         #                                frames=22,
         #                                interval=self.__frame_time)
-        self.line.set_ydata(self.A * np.sin(self.x + self.v))  # update the data
-        self.anim = FuncAnimation(self.figure, self.update_anim, frames=np.arange(0, 20), interval=50)
+        self.playing = True
+        if self.play_count == 1:
+            # print(ind)
+            frame = self.my_frames[ind]
+            ind += 1
+            self.baseLabel.configure(image=frame)
+            if ind > len(self.my_frames) - 1:
+                ind = 0
+            self.last_index = ind
+            self.frameCounterLabel.configure(text="Current Frame: %d" % (self.last_index))
+            self.loop = self.master.after(self.fpsValue, self.play_anim, ind, anim, 1)
+        else:
+            return
+
 
     def update_anim(self, i):
         # im_normed = np.random.random((64, 64))
