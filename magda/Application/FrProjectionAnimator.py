@@ -25,13 +25,14 @@ class FrProjectionAnimator(ttk.Frame):
 
     def __create_widgets(self):
         # setup the grid layout manager
-        self.columnconfigure(0, weight=1)
+        # self.columnconfigure(0, weight=1)
 
         # ttk.Button(self, text='Start', command=self.start_animation).grid(column=0, row=0)
 
         self.baseFrame = ttk.Frame(self, width=400, height=400, bg="gray")
         self.baseFrame.place(x=150, y=40)
         self.baseLabel = ttk.Label(self.baseFrame, bg="gray")
+        self.baseFrame.place(x=150, y=40)
 
         # canvas = tk.Canvas(self, width=800, height=800)
         # canvas.pack()  # this makes it visible
@@ -39,9 +40,6 @@ class FrProjectionAnimator(ttk.Frame):
         # # Loads and create image (put the image in the folder)
         # img = tk.PhotoImage(file="mega.png")
         # image = canvas.create_image(10, 10, anchor=tk.NW, image=img)
-
-        for widget in self.winfo_children():
-            widget.grid(padx=0, pady=3)
 
     def load_frames(self, dicom):
         self.frames = dicom.pixel_array
