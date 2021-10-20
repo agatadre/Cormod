@@ -4,6 +4,7 @@ from pydicom.errors import InvalidDicomError
 from pydicom import dcmread
 from Application.FrMenu import FrMenuPanel
 from Application.FrProjectionAnimator import FrProjectionAnimator
+from functions import display_multiple_img, print_dicom_info
 
 
 class App(tk.Tk):
@@ -33,18 +34,19 @@ class App(tk.Tk):
         # self.attributes('-toolwindow', True)  # windows only (remove the minimize/maximize button)
         self.attributes('-topmost', 1)
 
-        # layout of the root window - 2 cols
+        self.__create_widgets()
+
+    def __create_widgets(self):
+        # layout of the root window
         self.rowconfigure(0, weight=0)
         self.rowconfigure(1, weight=1)
-        # self.columnconfigure(0, weight=1)
-        # self.columnconfigure(1, weight=7)
         self.columnconfigure(0, weight=1)
 
-        # create the MenuPanel Frame and locate it in the left panel
+        # create the MenuPanel Frame and locate it
         self.__menu_panel_frame = FrMenuPanel(self)
         self.__menu_panel_frame.grid(column=0, row=0, sticky='nsew')
 
-        # create the ProjectionAnimator Frame and locate it in the right panel
+        # create the ProjectionAnimator Frame and locate it
         self.__projection_animator_frame = FrProjectionAnimator(self)
         self.__projection_animator_frame.grid(column=0, row=1, sticky='nsew')
 
@@ -52,15 +54,19 @@ class App(tk.Tk):
     def load_chosen_dicom(self, filename):
         try:
             ds = dcmread(filename)
-            self.ds_context = ds
         except InvalidDicomError:
             print('The the file does not appear to be DICOM. Maybe header is lacking.')
+        finally:
+            if ds is not None:
+                self.ds_context = ds
+                self.__load_dicom_to_components()
 
-    def load_projection_animator(self):
-        if self.ds_context is not None:
-            self.__projection_animator_frame.load_frames(self.ds_context)
-            self.__projection_animator_frame.start_animation()
-        self.__projection_animator_frame.start_animation()
+    def __load_dicom_to_components(self):
+        self.__projection_animator_frame.load_frames(self.ds_context)
+
+    def show_component(self, name=''):
+        """TODO - zmiana wyświetlanego frame'a"""
+        pass
 
 
 if __name__ == "__main__":

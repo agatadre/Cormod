@@ -15,8 +15,7 @@ print_dicom_info(ds)
 
 
 fig, ax = plt.subplots()
-xdata, ydata = [], []
-ln, = plt.plot([], [], 'ro')
+
 #
 # def init():
 #     ax.set_xlim(0, 2*np.pi)
@@ -30,7 +29,7 @@ def update(frame):
     # ln.set_data(xdata, ydata)
     return im,
 
-ani = animation.FuncAnimation(fig, update, frames=22, blit=True)
+ani = animation.FuncAnimation(fig, update, frames=22, blit=True, interval=100)
 plt.show()
 
 

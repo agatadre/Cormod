@@ -30,7 +30,7 @@ class FrMenuPanel(ttk.Frame):
             .grid(column=0, row=0, sticky='e')
 
         button_frame = ttk.Frame(self, name='buttonFrame', style='MP.TFrame', padding=5)
-        ttk.Button(button_frame, text='Projection animator', command=self.__mainApp.load_projection_animator)\
+        ttk.Button(button_frame, text='Projection animator', command=self.__mainApp.show_component(name='projection_animator'))\
             .grid(column=0, row=0)
         # ttk.Button(button_frame, text='Second func')\
         #     .grid(column=1, row=0)
@@ -44,10 +44,14 @@ class FrMenuPanel(ttk.Frame):
 
     """Let user choose a source dicom file and load it"""
     def __browse_files(self):
-        self.__filename = fd.askopenfilename(
+        filename = fd.askopenfilename(
             title='Open a file',
             initialdir='../../src_images/',
             filetypes=(('DICOM files', '*.dcm'), ('All files', '*.*'))
         )
-        self.children['topFrame'].children['filenameLabel'].configure(text=self.__filename)
-        self.__mainApp.load_chosen_dicom(self.__filename)
+
+        if filename is not None and filename != '':
+            """Load only if user has chosen any file"""
+            self.__filename = filename
+            self.children['topFrame'].children['filenameLabel'].configure(text=self.__filename)
+            self.__mainApp.load_chosen_dicom(self.__filename)
