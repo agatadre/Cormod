@@ -3,7 +3,7 @@ import matplotlib.image as mpimg
 import numpy as np
 from pydicom import dcmread
 from skimage.filters import frangi, hessian
-from functions import display_multiple_img, print_dicom_info
+from functions import create_multiple_img_fig, print_dicom_info
 import cv2
 import math
 from skimage import img_as_ubyte
@@ -151,7 +151,7 @@ def test_algorithm():
          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
         ])
 
-    display_multiple_img(test1, rows=11)
+    create_multiple_img_fig(test1, rows=11)
 
     test_sh = surrogate_ECG_horline_integrals(test1, max_shift=3)
     test_sh = abs(test_sh)
@@ -188,14 +188,14 @@ def show_results_from_dicom():
 
     maximal = np.max(images_frangi)
     print(f'=============== MAX = {maximal}')
-    # display_multiple_img(images_frangi, 4, 'gray', addColorbar=True)
+    # create_multiple_img_fig(images_frangi, 4, 'gray', addColorbar=True)
 
     thresh = 20
     bin_imgs = cv2.threshold(images_frangi, thresh, 255, cv2.THRESH_BINARY)[1]
-    display_multiple_img(bin_imgs, 4, 'gray', title=f'binary{thresh}')
+    create_multiple_img_fig(bin_imgs, 4, 'gray', title=f'binary{thresh}')
     #
     # bin_imgs = cv2.threshold(images_frangi, 10.0, 255.0, cv2.THRESH_BINARY_INV)[1]
-    # display_multiple_img(bin_imgs, 4, 'gray', title='binary inv 10')
+    # create_multiple_img_fig(bin_imgs, 4, 'gray', title='binary inv 10')
 
     #    plt.show()
 
@@ -237,7 +237,7 @@ def ED_finder_algorithm(images, max_shift=None, title=None):
 
 def quick_image_filtering(images, thresh=10, min_size=700):
     TYPE = images.dtype
-    display_multiple_img(images, 4, 'gray', addColorbar=True, title=f'original projection')
+    create_multiple_img_fig(images, 4, 'gray', addColorbar=True, title=f'original projection')
 
     print("============== filtering - frangi ==================")
     images_frangi = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
@@ -251,7 +251,7 @@ def quick_image_filtering(images, thresh=10, min_size=700):
     print(f'=============== MAX = {maximal}')
 
     bin_imgs = cv2.threshold(images_frangi, thresh, 255, cv2.THRESH_BINARY)[1]
-    display_multiple_img(bin_imgs, 4, 'gray', title=f'thresholded projection, th={thresh}')
+    create_multiple_img_fig(bin_imgs, 4, 'gray', title=f'thresholded projection, th={thresh}')
 
     print("============== removing small objects ==================")
     images_reduced = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
@@ -260,7 +260,7 @@ def quick_image_filtering(images, thresh=10, min_size=700):
         red = np.reshape(remove_small_objects(img, min_size), (1, 512, 512))
         images_reduced = np.append(images_reduced, red, axis=0)
 
-    display_multiple_img(images_reduced, 4, 'gray', title=f'reduced binary projection, th={thresh} min_s={min_size}')
+    create_multiple_img_fig(images_reduced, 4, 'gray', title=f'reduced binary projection, th={thresh} min_s={min_size}')
 
     # canny1 = cv2.Canny(images[18], 150, 190)
     # canny2 = cv2.Canny(images_frangi[18], 50, 100)
@@ -270,7 +270,7 @@ def quick_image_filtering(images, thresh=10, min_size=700):
     # titles = ['canny - Original image',
     #           'canny - Frangi',
     #           'canny - reduced ']
-    # display_multiple_img(images_res, 2, 'gray', title=f'binary{thresh}', img_titles=titles)
+    # create_multiple_img_fig(images_res, 2, 'gray', title=f'binary{thresh}', img_titles=titles)
     plt.show()
     return images_reduced
 

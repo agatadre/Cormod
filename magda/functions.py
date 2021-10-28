@@ -31,7 +31,20 @@ def print_dicom_info(dic_file):
     # print(ds['ContentTime']) #The time the image pixel data creation started. Required if image is part of a series in which the images are temporally related.
 
 
-def display_multiple_img(images, rows=1, type='gray', title='', addColorbar=False, img_titles=''):
+def create_multiple_img_fig(images, rows=1, type='gray', title='', addColorbar=False, img_titles=''):
+    if images.shape[0] > 30:
+        rows = 6
+    elif images.shape[0] > 20:
+        rows = 5
+    elif images.shape[0] > 15:
+        rows = 4
+    elif images.shape[0] > 8:
+        rows = 3
+    elif images.shape[0] > 2:
+        rows = 2
+    else:
+        rows = 1
+
     cols = math.ceil(images.shape[0]/rows)
     fig, axs = plt.subplots( nrows=rows, ncols=cols )
     num_of_img = images.shape[0] if isinstance(images, np.ndarray) else len(images)
@@ -54,10 +67,18 @@ def display_multiple_img(images, rows=1, type='gray', title='', addColorbar=Fals
 
     fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=0.2)
     if title != '':
-        fig.canvas.set_window_title(title)
+        fig.canvas.manager.set_window_title(title)
     if addColorbar:
         fig.colorbar(img_ret)
 
+    return fig
 
-def save_np_as_png(img, filename):
-    plt.imsave(f'{filename}.png', img, format='png', cmap=plt.cm.gray)
+
+def save_np_as_png(filename, fig=None, img=None):
+    if fig == None:
+        plt.imsave(f'{filename}.png', img, format='png', cmap=plt.cm.gray)
+    else:
+        fig.savefig(f'{filename}.png',
+                    format='png',
+                    bbox_inches='tight',
+                    pad_inches=0.5)
