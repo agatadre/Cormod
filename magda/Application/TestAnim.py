@@ -15,6 +15,11 @@ print_dicom_info(ds)
 
 
 fig, ax = plt.subplots()
+a = images[0]
+im = ax.imshow(a, cmap='gray', animated=True)
+time_text = ax.text(0.5, 0.05, "", bbox={'facecolor': 'red',
+                                       'alpha': 0.5, 'pad': 2},
+         transform=ax.transAxes, ha="center")
 
 #
 # def init():
@@ -22,12 +27,24 @@ fig, ax = plt.subplots()
 #     ax.set_ylim(-1, 1)
 #     return ln,
 
-def update(frame):
-    im = plt.imshow(images[frame], cmap='gray', animated=True)
-    # xdata.append(frame)
-    # ydata.append(np.sin(frame))
-    # ln.set_data(xdata, ydata)
-    return im,
+def init():
+    im.set_data(np.random.random((5,5)))
+    return [im]
+
+# animation function.  This is called sequentially
+def update(i):
+    im.set_array(images[i])
+    time_text.set_text(str(i))
+    return im, time_text,
+
+# def update(frame):
+#     im.set_array(a)
+#     im = ax.imshow(images[frame], cmap='gray', animated=True)
+#     ax.set_title(frame)
+#     # xdata.append(frame)
+#     # ydata.append(np.sin(frame))
+#     # ln.set_data(xdata, ydata)
+#     return im,
 
 ani = animation.FuncAnimation(fig, update, frames=22, blit=True, interval=100)
 plt.show()
