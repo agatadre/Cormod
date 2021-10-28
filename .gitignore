@@ -2,7 +2,9 @@ src_images/
 results_images_edfinder/
 magda/assets
 magda/results - images
-
+magda/Application/SAVE.py
+magda/Application/TestAnim.py
+magda/Application/testAnim2.py
 # User-specific stuff:
 .idea/workspace.xml
 .idea/tasks.xml
