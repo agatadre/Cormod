@@ -4,16 +4,17 @@ from pydicom.errors import InvalidDicomError
 from pydicom import dcmread
 from Application.FrMenu import FrMenuPanel
 from Application.FrProjectionAnimator import FrProjectionAnimator
-from functions import display_multiple_img, print_dicom_info
+from functions import create_multiple_img_fig, print_dicom_info
 
 
 class App(tk.Tk):
     def __init__(self, center=False):
         super().__init__()
         self.ds_context = None
+        self.filename = None
 
         self.window_width = 800
-        self.window_height = 500
+        self.window_height = 600
 
         if center:
             # get the screen dimension

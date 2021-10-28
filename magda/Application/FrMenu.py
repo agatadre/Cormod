@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter.messagebox import showinfo
-from functions import display_multiple_img, print_dicom_info
+from functions import create_multiple_img_fig, print_dicom_info
 
 
 class FrMenuPanel(ttk.Frame):
@@ -53,5 +53,6 @@ class FrMenuPanel(ttk.Frame):
         if filename is not None and filename != '':
             """Load only if user has chosen any file"""
             self.__filename = filename
+            self.__mainApp.filename = filename
             self.children['topFrame'].children['filenameLabel'].configure(text=self.__filename)
             self.__mainApp.load_chosen_dicom(self.__filename)
