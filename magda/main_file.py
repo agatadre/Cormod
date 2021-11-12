@@ -235,9 +235,10 @@ def ED_finder_algorithm(images, max_shift=None, title=None):
     plt.show()
 
 
-def quick_image_filtering(images, thresh=10, min_size=700):
+def quick_image_filtering(images, thresh=10, min_size=700, showPlots=False):
     TYPE = images.dtype
-    create_multiple_img_fig(images, 4, 'gray', addColorbar=True, title=f'original projection')
+    if showPlots:
+        create_multiple_img_fig(images, 4, 'gray', addColorbar=True, title=f'original projection')
 
     print("============== filtering - frangi ==================")
     images_frangi = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
@@ -251,7 +252,9 @@ def quick_image_filtering(images, thresh=10, min_size=700):
     print(f'=============== MAX = {maximal}')
 
     bin_imgs = cv2.threshold(images_frangi, thresh, 255, cv2.THRESH_BINARY)[1]
-    create_multiple_img_fig(bin_imgs, 4, 'gray', title=f'thresholded projection, th={thresh}')
+
+    if showPlots:
+        create_multiple_img_fig(bin_imgs, 4, 'gray', title=f'thresholded projection, th={thresh}')
 
     print("============== removing small objects ==================")
     images_reduced = np.empty((0, images.shape[1], images.shape[2]), dtype=TYPE)
@@ -260,7 +263,8 @@ def quick_image_filtering(images, thresh=10, min_size=700):
         red = np.reshape(remove_small_objects(img, min_size), (1, 512, 512))
         images_reduced = np.append(images_reduced, red, axis=0)
 
-    create_multiple_img_fig(images_reduced, 4, 'gray', title=f'reduced binary projection, th={thresh} min_s={min_size}')
+    if showPlots:
+        create_multiple_img_fig(images_reduced, 4, 'gray', title=f'reduced binary projection, th={thresh} min_s={min_size}')
 
     # canny1 = cv2.Canny(images[18], 150, 190)
     # canny2 = cv2.Canny(images_frangi[18], 50, 100)
@@ -271,7 +275,7 @@ def quick_image_filtering(images, thresh=10, min_size=700):
     #           'canny - Frangi',
     #           'canny - reduced ']
     # create_multiple_img_fig(images_res, 2, 'gray', title=f'binary{thresh}', img_titles=titles)
-    plt.show()
+
     return images_reduced
 
 
@@ -376,6 +380,17 @@ def disp_top_blackhat_frangi_and_thresh_resuts(img, thresh=15):
     ax = fig.add_subplot(2, 5, 10)
     ax.imshow(th_img, 'gray')
 
+def wykres_na_podstawie_artykulu_hor_line_integrals():
+    images_red = quick_image_filtering(images, thresh=15, showPlots=True)
+    hor_integrals = np.sum(images_red, axis=2).transpose()
+    hor_integrals = hor_integrals / 512
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.imshow(hor_integrals, 'gray')
+    ax.set_aspect(aspect=0.1)
+    ax.set_xlabel('Numer klatki')
+    ax.set_ylabel('Całka po linii poziomej dla współrzędnej pionowej obrazu')
+    plt.show()
 
 if __name__ == '__main__':
     # test_algorithm()
@@ -385,9 +400,31 @@ if __name__ == '__main__':
     ds = dcmread(file_path)
     images = ds.pixel_array
     print_dicom_info(ds)
+    TYPE = images.dtype
 
-    projection_reduced = quick_image_filtering(images, thresh=15)
-    ED_finder_algorithm(projection_reduced)
+    images_red = quick_image_filtering(images, thresh=15, showPlots=True)
+    hor_integrals = np.sum(images_red, axis=2).transpose()
+    hor_integrals = hor_integrals / 512
+
+
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    ax.imshow(hor_integrals, 'gray')
+    # ax.set_title('hor_line integrals', fontsize=15, y=-0.1)
+    # ax.set_axis_off()
+    N = 22
+    ind = np.arange(N)
+    ax.set_xticks(ind)
+    ax.set_xticklabels(('G1', 'G2', 'G3', 'G4', 'G5'))
+    ax.set_aspect(aspect=0.1)
+    ax.set_xlabel('Numer klatki')
+    ax.set_ylabel('Całka po linii poziomej dla współrzędnej pionowej obrazu')
+    plt.show()
+
+    #===========================================
+    # create_multiple_img_fig(images, 4, 'gray', addColorbar=True, title=f'original projection')
+    #
+    # projection_reduced = quick_image_filtering(images, thresh=15)
+    # ED_finder_algorithm(projection_reduced)
 
     # show_results_from_dicom()
 

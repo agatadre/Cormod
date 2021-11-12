@@ -11,20 +11,20 @@ class FrMenuPanel(ttk.Frame):
         self.__mainApp = container
         self.__filename = ''
 
-        ttk.Style().configure('MP.TFrame', background='#fcfabc')
+        ttk.Style().configure('MP.TFrame', background='#eac871')
         self['style'] = 'MP.TFrame'
 
         self.__create_widgets()
 
     """Create all elements and set layout to grid."""
     def __create_widgets(self):
-        ttk.Style().configure('MP.TLabel', background='#fcfabc')
+        ttk.Style().configure('Menu.TLabel', background='#eac871')
 
         top_frame = ttk.Frame(self, name='topFrame', style='MP.TFrame', relief='ridge', padding=5)
         top_frame.columnconfigure(0, weight=1)
-        ttk.Label(top_frame, text="Opened dicom file:", style='MP.TLabel')\
+        ttk.Label(top_frame, text="Opened dicom file:", style='Menu.TLabel')\
             .grid(column=0, row=0, sticky='w')
-        ttk.Label(top_frame, name='filenameLabel', text='-', style='MP.TLabel')\
+        ttk.Label(top_frame, name='filenameLabel', text='-', style='Menu.TLabel')\
             .grid(column=0, row=1, sticky='w')
         ttk.Button(top_frame, text="Browse", command=self.__browse_files)\
             .grid(column=0, row=0, sticky='e')

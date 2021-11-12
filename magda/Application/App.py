@@ -33,7 +33,7 @@ class App(tk.Tk):
         # self.iconphoto(False, tk.PhotoImage(file='../assets/logoIcon_16x16.png'))  # for png/jpg format
         self.resizable(True, True)
         # self.attributes('-toolwindow', True)  # windows only (remove the minimize/maximize button)
-        self.attributes('-topmost', 1)
+        # self.attributes('-topmost', 1)
 
         self.__create_widgets()
 
