@@ -42,7 +42,7 @@ class FrProjectionAnimator(ttk.Frame):
         # setup the grid layout manager
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=7)
-        self.rowconfigure(0)
+        self.rowconfigure(0, weight=1)
 
         self.__btn_panel.grid(column=0, row=0, sticky='nsew')
         self.__canvas.get_tk_widget().grid(column=1, row=0, sticky='nsew')
@@ -95,7 +95,7 @@ class FrProjectionAnimator(ttk.Frame):
             self.__animation.resume()
         self.__anim_running = not self.__anim_running
 
-        self.__btn_panel.btn_pause.state(['disabled'])
+        self.__btn_panel.btn_pause
         self.__btn_panel.btn_left.state(['!disabled'])
         self.__btn_panel.btn_right.state(['!disabled'])
         self.__btn_panel.btn_start.state(['!disabled'])
