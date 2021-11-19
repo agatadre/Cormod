@@ -3,6 +3,7 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 import matplotlib.figure
+from matplotlib.widgets import RectangleSelector
 from matplotlib.patches import Rectangle
 from matplotlib.animation import FuncAnimation
 import numpy as np
@@ -19,10 +20,10 @@ class FrCropImages(ttk.Frame):
         ttk.Style().configure('PA.TFrame', background='#ffffff')
         self['style'] = 'PA.TFrame'
 
-        self.x0 = None
-        self.y0 = None
-        self.x1 = None
-        self.y1 = None
+        self.left = 0.0
+        self.down = 0.0
+        self.right = 0.0
+        self.top = 0.0
         self.__fig = matplotlib.figure.Figure()
         self.__ax = self.__fig.add_subplot(111)
         self.__ax.set_aspect('equal', adjustable='box')
@@ -32,15 +33,16 @@ class FrCropImages(ttk.Frame):
     def __create_widgets(self):
         self.__btn_panel = FrButtons(self)
 
-        self.rect = Rectangle((0, 0), 1, 1)
-        self.__ax.add_patch(self.rect)
-
         self.__canvas = FigureCanvasTkAgg(self.__fig, self)
         self.__canvas.draw()
-        self.__canvas.mpl_connect('button_press_event', self.on_press)
-        self.__canvas.mpl_connect('button_release_event', self.on_release)
-        # self.ax.figure.canvas.mpl_connect('button_release_event', self.on_release)
-        # self.ax.figure.canvas.mpl_connect('motion_notify_event', self.on_motion)
+
+        # drawtype is 'box' or 'line' or 'none'
+        self.__rs = RectangleSelector(self.__ax, self.line_select_callback,
+                                      drawtype='box', useblit=False,
+                                      button=[1],  # use only left button
+                                      minspanx=5, minspany=5,
+                                      spancoords='pixels',
+                                      interactive=True)
 
         # setup the grid layout manager
         self.columnconfigure(0, weight=1)
@@ -50,20 +52,11 @@ class FrCropImages(ttk.Frame):
         self.__btn_panel.grid(column=0, row=0, sticky='nsew')
         self.__canvas.get_tk_widget().grid(column=1, row=0, sticky='nsew')
 
-    def on_press(self, event):
-        print('press')
-        self.x0 = event.xdata
-        self.y0 = event.ydata
-
-    def on_release(self, event):
-        print('release')
-        self.x1 = event.xdata
-        self.y1 = event.ydata
-        self.rect.set_width(self.x1 - self.x0)
-        self.rect.set_height(self.y1 - self.y0)
-        self.rect.set_xy((self.x0, self.y0))
-        self.__ax.figure.canvas.draw()
-
+    def line_select_callback(self, eclick, erelease):
+        self.left, self.down = eclick.xdata, eclick.ydata
+        self.right, self.top = erelease.xdata, erelease.ydata
+        print("l,d (%3.2f, %3.2f) --> r,t (%3.2f, %3.2f)" % (self.left, self.down, self.right, self.top))
+        # print(" The button you used were: %s %s" % (eclick.button, erelease.button))
 
 class FrButtons(ttk.Frame):
     def __init__(self, container):
