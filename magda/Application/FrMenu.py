@@ -74,7 +74,6 @@ class FrMenuPanel(ttk.Frame):
             """Load only if user has chosen any file"""
             self.__filenames[which] = filename
             self.children['sourceFrame'+which].children['filenameLabel'+which].configure(text=filename)
-            self.children['sourceFrame' + which].children['active'+which+'Btn'].state(['!disabled'])
             self.__mainApp.load_chosen_dicom(which, filename)
 
     def __set_active(self):

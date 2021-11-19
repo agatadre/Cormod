@@ -47,9 +47,9 @@ class FrProjectionAnimator(ttk.Frame):
         self.__btn_panel.grid(column=0, row=0, sticky='nsew')
         self.__canvas.get_tk_widget().grid(column=1, row=0, sticky='nsew')
 
-    def load_frames(self, dicom):
-        self.__frames = dicom.pixel_array
-        self.__frame_time = dicom['FrameTime'].value if 'FrameTime' in dicom else 500
+    def load_frames(self, projection, frame_time):
+        self.__frames = projection
+        self.__frame_time = frame_time
         self.__actual_frame_num = 0
         self.__frame_disp = self.__ax.imshow(self.__frames[0], cmap='gray', animated=True)
         self.__time_text.set_text(self.__actual_frame_num)
@@ -66,7 +66,6 @@ class FrProjectionAnimator(ttk.Frame):
 
     def __update_animation(self, i):
         self.__actual_frame_num = i
-
         self.__frame_disp.set_array(self.__frames[i])
         self.__time_text.set_text( i )
         return self.__frame_disp, self.__time_text,
