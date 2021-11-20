@@ -2,15 +2,19 @@ import tkinter as tk
 from tkinter import ttk
 from pydicom.errors import InvalidDicomError
 from pydicom import dcmread
+
+from Application.EDFinder import EDFinder
 from Application.FrMenu import FrMenuPanel
 from Application.FrProjectionAnimator import FrProjectionAnimator
 from Application.FrCropImages import FrCropImages
 from functions import create_multiple_img_fig, print_dicom_info
 import numpy as np
+from pathlib import Path
 
 class App(tk.Tk):
     def __init__(self, center=False):
         super().__init__()
+        EDFinder.mainWindow = self
         self.ds_context = {}
         self.filenames = {}
         self.frames_context = {}
@@ -52,6 +56,50 @@ class App(tk.Tk):
         # create the MenuPanel Frame and locate it
         self.__menu_panel_frame = FrMenuPanel(self)
         self.__menu_panel_frame.grid(column=0, row=0, sticky='nsew')
+
+    def get_active_filename(self):
+        p = Path(self.filenames[self.__active_projection])
+        parts = p.parts
+        return parts[-2] + '_' + parts[-1][:-4]  # without extension (.dcm)
+
+    def get_frame_time(self):
+        dicom = self.ds_context[self.__active_projection]
+        frame_time = dicom['FrameTime'].value if 'FrameTime' in dicom else 500
+        return frame_time
+
+    def get_sod(self):
+        dicom = self.ds_context[self.__active_projection]
+        # (0018, 1111) Distance Source to Patient
+        return dicom[0x0018, 0x1111].value
+
+    def get_sid(self):
+        dicom = self.ds_context[self.__active_projection]
+        # (0018, 1110) Distance Source to Detector
+        return dicom[0x0018, 0x1110].value
+
+    def get_alpha(self):
+        dicom = self.ds_context[self.__active_projection]
+        # (0018, 1510) Positioner Primary Angle
+        return dicom[0x0018, 0x1510].value
+
+    def get_beta(self):
+        dicom = self.ds_context[self.__active_projection]
+        # (0018, 1511) Positioner Secondary Angle
+        return dicom[0x0018, 0x1511].value
+
+    def get_pixel_spacing(self):
+        dicom = self.ds_context[self.__active_projection]
+        # (0018, 1164) Image Pixel Spacing
+        return dicom[0x0018, 0x1164].value
+
+    def print_geometry_info(self):
+        print('------------------------------------')
+        print('sod: ' + str(self.get_sod()))
+        print('sid: ' + str(self.get_sid()))
+        print('alpha: ' + str(self.get_alpha()))
+        print('beta: ' + str(self.get_beta()))
+        print('pixel_spacing: ' + str(self.get_pixel_spacing()))
+        print('------------------------------------')
 
     """Load dicom file to App"""
     def load_chosen_dicom(self, index, filename):
@@ -95,8 +143,7 @@ class App(tk.Tk):
             self.__active_frame = FrProjectionAnimator(self)
             self.__active_frame.grid(column=0, row=1, sticky='nsew')
 
-            dicom = self.ds_context[self.__active_projection]
-            frame_time = dicom['FrameTime'].value if 'FrameTime' in dicom else 500
+            frame_time = self.get_frame_time()
             frames = self.frames_context[self.__active_projection]
             self.__active_frame.load_frames(frames, frame_time)
 

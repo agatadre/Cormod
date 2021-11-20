@@ -44,7 +44,6 @@ class FrCropImages(ttk.Frame):
         self.__canvas.draw()
 
         # drawtype is 'box' or 'line' or 'none'
-        #TODO - spancords='data'
         self.__rs = RectangleSelector(self.__ax, self.line_select_callback,
                                       drawtype='box', useblit=False, button=[1],  # use only left button
                                       minspanx=5, minspany=5, spancoords='data', interactive=True,
@@ -59,9 +58,6 @@ class FrCropImages(ttk.Frame):
         self.__canvas.get_tk_widget().grid(column=1, row=0, sticky='nsew')
 
     def line_select_callback(self, eclick, erelease):
-        self.left, self.down = int(eclick.xdata), int(eclick.ydata)
-        self.right, self.top = int(erelease.xdata), int(erelease.ydata)
-        print(f'l,d ({self.left}, {self.down}) --> r,t ({self.right}, {self.top})')
         self.left = math.ceil(self.__rs.extents[0])
         self.right = math.ceil(self.__rs.extents[1])
         self.down = math.ceil(self.__rs.extents[2])

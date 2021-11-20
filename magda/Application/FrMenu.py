@@ -44,9 +44,9 @@ class FrMenuPanel(ttk.Frame):
         ttk.Label(choose_frame, text="Set active projection:", style='Menu.TLabel') \
             .pack(side='left')
         self.__active = tk.StringVar()
-        ttk.Radiobutton(choose_frame, style='Menu.TRadiobutton', text="A", variable=self.__active, value='A', command=self.__set_active)\
+        ttk.Radiobutton(choose_frame, name='radioA', style='Menu.TRadiobutton', text="A", variable=self.__active, value='A', command=self.__set_active)\
             .pack(side='left')
-        ttk.Radiobutton(choose_frame, style='Menu.TRadiobutton', text="B", variable=self.__active, value='B', command=self.__set_active)\
+        ttk.Radiobutton(choose_frame, name='radioB', style='Menu.TRadiobutton', text="B", variable=self.__active, value='B', command=self.__set_active)\
             .pack(side='left')
 
         button_frame = ttk.Frame(self, name='buttonFrame', style='MP.TFrame', padding=5)
@@ -75,6 +75,7 @@ class FrMenuPanel(ttk.Frame):
             self.__filenames[which] = filename
             self.children['sourceFrame'+which].children['filenameLabel'+which].configure(text=filename)
             self.__mainApp.load_chosen_dicom(which, filename)
+            self.children['chooseFrame'].children['radio'+which].invoke()
 
     def __set_active(self):
         which = self.__active.get()

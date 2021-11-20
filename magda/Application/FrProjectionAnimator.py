@@ -8,7 +8,9 @@ import numpy as np
 import matplotlib
 from pathlib import Path
 from Application.EDFinder import EDFinder
-
+import cv2
+from tkinter import filedialog as fd
+import matplotlib.pyplot as plt
 
 class FrProjectionAnimator(ttk.Frame):
 
@@ -17,6 +19,8 @@ class FrProjectionAnimator(ttk.Frame):
         self.mainApp = container
         ttk.Style().configure('PA.TFrame', background='#ffffff')
         self['style'] = 'PA.TFrame'
+
+        self.mainApp.print_geometry_info()
 
         self.__frames = None
         self.__frame_time = None
@@ -28,8 +32,7 @@ class FrProjectionAnimator(ttk.Frame):
         self.__fig = matplotlib.figure.Figure()
         self.__ax = self.__fig.add_subplot(111)
         self.__ax.set_aspect('equal', adjustable='box')
-        self.__time_text = self.__ax.text(0.5, 0.05, "", bbox={'facecolor': 'red',
-                                                               'alpha': 0.5, 'pad': 2},
+        self.__time_text = self.__ax.text(0.5, 0.05, "", bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 2},
                                           transform=self.__ax.transAxes, ha="center")
 
         self.__create_widgets()
@@ -59,6 +62,9 @@ class FrProjectionAnimator(ttk.Frame):
         self.__btn_panel.children['frameTimeLabel'].configure(text=time_text)
 
         self.__btn_panel.btn_start.state(['!disabled'])
+        self.__btn_panel.btn_left.state(['!disabled'])
+        self.__btn_panel.btn_right.state(['!disabled'])
+        self.__btn_panel.btn_save_fig.state(['!disabled'])
         self.__btn_panel.btn_plot_ECG.state(['!disabled'])
 
     def frames_len(self):
@@ -118,12 +124,21 @@ class FrProjectionAnimator(ttk.Frame):
             self.__canvas.draw()
 
     def call_plot_ECG_signal(self):
-        p = Path(self.mainApp.filename)
-        parts = p.parts
-        pp = Path('../../results_images_edfinder/').joinpath(parts[-2] + '_' + parts[-1][:-4])  # without extension (.dcm)
+        p = self.mainApp.get_active_filename()  # without extension
+        pp = Path('../results_edfinder/').joinpath(p)
 
         EDFinder.filename = str(pp)
         EDFinder.find_EDPhase(self.__frames)
+
+    def save_to_png(self):
+        filename = fd.asksaveasfilename(
+            defaultextension='.png', filetypes=[("*.png", '*.png')],
+            initialdir='..\\results_edfinder\\',
+            title="Choose filename")
+
+        if filename is not None and filename != '':
+            """Save only if user has chosen any file"""
+            cv2.imwrite(filename, self.__frames[self.__actual_frame_num], [cv2.IMWRITE_PNG_COMPRESSION, 0])
 
 
 class FrButtons(ttk.Frame):
@@ -148,6 +163,8 @@ class FrButtons(ttk.Frame):
         self.btn_pause.state(['disabled'])
         self.btn_plot_ECG = ttk.Button(self, text='Plot ECG', command=container.call_plot_ECG_signal)
         self.btn_plot_ECG.state(['disabled'])
+        self.btn_save_fig = ttk.Button(self, text='Save image', command=container.save_to_png)
+        self.btn_save_fig.state(['disabled'])
 
         self.l_frame_time.pack(
             ipadx=10,
@@ -169,6 +186,11 @@ class FrButtons(ttk.Frame):
             pady=5
         )
         self.btn_plot_ECG.pack(
+            ipadx=10,
+            ipady=2,
+            pady=5
+        )
+        self.btn_save_fig.pack(
             ipadx=10,
             ipady=2,
             pady=5
