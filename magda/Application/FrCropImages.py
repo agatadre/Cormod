@@ -30,10 +30,6 @@ class FrCropImages(ttk.Frame):
         self.down = 0
         self.right = 0
         self.top = 0
-        self.left_sum = 0
-        self.down_sum = 0
-        self.right_sum = 0
-        self.top_sum = 0
         self.__fig = matplotlib.figure.Figure()
         self.__fig.patch.set_facecolor('#9dc2bb')
         self.__ax = self.__fig.add_subplot(111)
@@ -68,11 +64,9 @@ class FrCropImages(ttk.Frame):
         print(f'l,d ({self.left}, {self.down}) --> r,t ({self.right}, {self.top})')
         self.left = math.ceil(self.__rs.extents[0])
         self.right = math.ceil(self.__rs.extents[1])
-        self.top = math.ceil(self.__rs.extents[2])
-        self.down = math.ceil(self.__rs.extents[3])
+        self.down = math.ceil(self.__rs.extents[2])
+        self.top = math.ceil(self.__rs.extents[3])
         print(f'EXT ({self.left}, {self.down}, {self.right}, {self.top})')
-        print(self.__rs.extents)
-        # print(" The button you used were: %s %s" % (eclick.button, erelease.button))
 
     def redraw_image(self, image):
         self.__ax.imshow(image, cmap='gray', vmin=self.__vmin, vmax=self.__vmax)
@@ -83,6 +77,7 @@ class FrCropImages(ttk.Frame):
         self.__vmin = np.amin(image)
         self.__vmax = np.amax(image)
         self.redraw_image(image)
+        self.__btn_panel.btn_crop.state(['!disabled'])
 
     def crop_image(self):
         self.__rs.extents = (0, 0, 0, 0)
@@ -96,31 +91,27 @@ class FrCropImages(ttk.Frame):
         self.__cropped_frame = imgM
         self.redraw_image(self.__cropped_frame)
 
-        self.left_sum += self.left
-        self.down_sum += self.down
-        self.right_sum += self.right
-        self.top_sum += self.top
-
         self.__rs.set_active(True)
+        self.__btn_panel.btn_reset.state(['!disabled'])
+        self.__btn_panel.btn_crop.state(['disabled'])
+        self.__btn_panel.btn_save.state(['!disabled'])
 
     def reset_image(self):
         self.redraw_image(self.__frame)
+        self.__btn_panel.btn_crop.state(['!disabled'])
+        self.__btn_panel.btn_save.state(['disabled'])
 
     def save_cropped(self):
         self.__frame = self.__cropped_frame
         values = dict(
-            w=int(self.left_sum),
-            s=int(self.down_sum),
-            e=int(self.right_sum),
-            n=int(self.top_sum)
+            w=int(self.left),
+            s=int(self.down),
+            e=int(self.right),
+            n=int(self.top)
         )
         self.mainApp.crop_projection(values)
-
-        self.left_sum = 0.0
-        self.down_sum = 0.0
-        self.right_sum = 0.0
-        self.top_sum = 0.0
-        #TODO-wywołać zmiany wszędzie
+        self.__btn_panel.btn_crop.state(['!disabled'])
+        self.__btn_panel.btn_save.state(['disabled'])
 
 class FrButtons(ttk.Frame):
     def __init__(self, container):
@@ -133,6 +124,9 @@ class FrButtons(ttk.Frame):
         self.btn_reset = ttk.Button(self, text='Reset', command=container.reset_image)
         self.btn_crop = ttk.Button(self, text='Crop', command=container.crop_image)
         self.btn_save = ttk.Button(self, text='Save changes', command=container.save_cropped)
+        self.btn_reset.state(['disabled'])
+        self.btn_crop.state(['disabled'])
+        self.btn_save.state(['disabled'])
 
         self.btn_reset.pack(ipadx=10, ipady=2, pady=5)
         self.btn_crop.pack(ipadx=10, ipady=2, pady=5)
